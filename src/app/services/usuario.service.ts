@@ -1,13 +1,14 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
 
 //
 import { LoginForm } from '../interfaces/login-form.interface';
-import { Observable, throwError,catchError, map } from 'rxjs';
+import { Observable, throwError,catchError, map, of, tap } from 'rxjs';
 import { userResponse } from '../interfaces/userResponse.interface';
 import  {JwtHelperService} from '@auth0/angular-jwt';
 import Swal from 'sweetalert2';
+
 
 const base_url = environment.base_url;
 const helper =new JwtHelperService();
@@ -27,12 +28,22 @@ export class UsuarioService {
         .pipe(
             map( (res:userResponse) => {
 
-                //grabar token
-                this.saveToken(res.token);
+              // Evaluando si usuario y password son correctos:
+              // devuelve success = true
+              if(res.success)
+                {
+                  //grabar token
+                  this.saveToken(res.token);
 
-                //console.log(res)
-                return res;
-
+                  //console.log(res)
+                  return res;
+                }
+                else
+                {
+                  //si sucede un error:
+                  Swal.fire('Error:',res.message, 'error');
+                  return res;
+                }
             }),
             catchError((err) => this.handlerError({ err }))
         );
@@ -45,11 +56,25 @@ export class UsuarioService {
 
   }
 
-  private checkToken():void{
-    const userToken = localStorage.getItem('token');
+  checkToken(): Observable<boolean>{
+    const userToken = localStorage.getItem('token') || '';
     const isExpired = helper.isTokenExpired(userToken);
 
-    // si usuario esta loguedo-> cmbiar (true)
+    return this.http.post(`${base_url}/validartoken`, {
+        headers:{
+          'xtoken': userToken
+        }
+      }).pipe(
+        tap((resp:any) => {
+
+          return true;
+
+        }),
+        map(resp=> true ),
+
+          catchError( error=> of(false) )
+
+        )
 
 
   }
@@ -65,10 +90,12 @@ export class UsuarioService {
         errorMessage=` ${err.message}`;
     }
 
-    Swal.fire('Error', err.messages, 'error');
+    Swal.fire('Error', err.message, 'error');
     //return throwError(errorMessage);
     return throwError(()=> new Error(errorMessage));
 
   }
 
 }
+
+

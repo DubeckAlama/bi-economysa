@@ -15,7 +15,7 @@ export class LoginComponent {
   public formSubmitted = false;
 
   public loginForm = this.fb.group({
-    username: [localStorage.getItem('username') || '' , [Validators.required, Validators.email]],
+    username: [localStorage.getItem('username') || '', [Validators.required, Validators.email]],
     password: ['', Validators.required],
     remember: [false],
   });
@@ -27,23 +27,29 @@ export class LoginComponent {
   ) {}
 
   login(): void {
+
     // private handlerError({ err }: { err: any; }): Observable<never>{
     const formValue = (this.loginForm.value) as any ;
 
      this.usuarioService.login(formValue).
       subscribe( {
           next: (resp) => {
-           //console.log(resp);
-           if(this.loginForm.get('remember')?.value){
-              //localStorage.setItem('username', formValue.get('username').value);
-              // corregir.....!!!
-            }else{
-              localStorage.removeItem('username');
-            }
-            console.log(resp);
+              //console.log(resp);
 
-           //redirecciona a la ruta inicial del Home
-           //this.router.navigateByUrl('');
+            if( this.loginForm.get('remember')){
+
+              localStorage.setItem('username', this.loginForm.get('username')?.value || '');
+
+
+             }else{
+               localStorage.removeItem('username');
+                // corregir.....!!! NO FUNCIONA ESTA PARTE
+             }
+
+
+
+            //redirecciona a la ruta inicial del Home
+            this.router.navigateByUrl('/dashboard');
 
         },
         error: (err) => {
@@ -59,4 +65,5 @@ export class LoginComponent {
 
 
   }
+
 }
